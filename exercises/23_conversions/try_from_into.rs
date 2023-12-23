@@ -9,7 +9,7 @@
 // Execute `rustlings hint try_from_into` or use the `hint` watch subcommand for
 // a hint.
 
-use std::convert::{TryFrom, TryInto};
+use std::{convert::{TryFrom, TryInto}, num::TryFromIntError};
 
 #[derive(Debug, PartialEq)]
 struct Color {
@@ -37,10 +37,24 @@ enum IntoColorError {
 // time, but the slice implementation needs to check the slice length! Also note
 // that correct RGB color values must be integers in the 0..=255 range.
 
+impl From<TryFromIntError> for IntoColorError {
+    fn from(value: TryFromIntError) -> Self {
+        IntoColorError::IntConversion
+    }
+}
+fn try_to_unsigned(signed: i16) -> Result<u8, TryFromIntError> {
+    signed.try_into()
+}
+
 // Tuple implementation
 impl TryFrom<(i16, i16, i16)> for Color {
     type Error = IntoColorError;
     fn try_from(tuple: (i16, i16, i16)) -> Result<Self, Self::Error> {
+        Ok(Color {
+            red: try_to_unsigned(tuple.0)?,
+            green: try_to_unsigned(tuple.1)?,
+            blue: try_to_unsigned(tuple.2)?,
+        })
     }
 }
 
@@ -48,6 +62,11 @@ impl TryFrom<(i16, i16, i16)> for Color {
 impl TryFrom<[i16; 3]> for Color {
     type Error = IntoColorError;
     fn try_from(arr: [i16; 3]) -> Result<Self, Self::Error> {
+        Ok(Color {
+            red: try_to_unsigned(arr[0])?,
+            green: try_to_unsigned(arr[1])?,
+            blue: try_to_unsigned(arr[2])?,
+        })
     }
 }
 
@@ -55,6 +74,15 @@ impl TryFrom<[i16; 3]> for Color {
 impl TryFrom<&[i16]> for Color {
     type Error = IntoColorError;
     fn try_from(slice: &[i16]) -> Result<Self, Self::Error> {
+        if slice.len() != 3 {
+            Err(Self::Error::BadLen)
+        } else {
+            Ok(Color {
+                red: try_to_unsigned(slice[0])?,
+                green: try_to_unsigned(slice[1])?,
+                blue: try_to_unsigned(slice[2])?,
+            })
+        }
     }
 }
 
